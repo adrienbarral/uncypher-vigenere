@@ -1,0 +1,12 @@
+[package]
+name = "uncypher-vigenere"
+version = "0.1.0"
+authors = ["Adrien BARRAL <aba@robopec.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = "2.33.0"
+regex = "1"
+unidecode = "0.3.0"
