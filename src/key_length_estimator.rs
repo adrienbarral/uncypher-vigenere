@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fmt;
 
 type RepeatedSequences = HashMap<String, Vec<usize>>;
 
