@@ -13,6 +13,6 @@ fn test_we_can_detect_key_length() {
     let clean_cyphered_text = format_cyphered_text(&cyphered_text);
 
     let key_length = detect_key_length(&clean_cyphered_text,10);
-
+    
     assert_eq!(key_length, 9);
 }

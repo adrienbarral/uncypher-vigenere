@@ -8,8 +8,13 @@ pub type AlphabetNormalized = Array1<f32>;
 pub fn find_key(key_length: usize, text: &str, language: &AlphabetNormalized) -> String {
     let mut key = String::new();
     for index in 0..key_length {
-        let c = std::char::from_u32_unchecked( find_most_probable_key_letter(index, key_length, text, language) as u32);
-        key.push(c);
+        let c = std::char::from_u32(
+            find_most_probable_key_letter(index, key_length, text, language) as u32,
+        );
+        match c {
+            Some(c) => key.push(c),
+            None => panic!("Key length out of bound"),
+        }
     }
     return key;
 }
@@ -36,16 +41,19 @@ fn find_most_probable_key_letter(
 
     for candidate in 0..26 {
         let candidate_char = 'a' as u8 + candidate;
-        let uncyphered = uncypher_with_key(
-            std::str::from_utf8_unchecked(&[candidate_char]),
-            &all_letters_cyphered_by_this_key_letter,
-        );
-        let histogram = get_histogram_of_letter_occurance(&uncyphered);
-        let divergence_to_language_histogram = kullback_lieber_divergence(&histogram, language);
+        let candidate_char_slice = [candidate_char];
+        let key = std::str::from_utf8(&candidate_char_slice);
+        if let Ok(k) = key {
+            let uncyphered = uncypher_with_key(k, &all_letters_cyphered_by_this_key_letter);
+            let histogram = get_histogram_of_letter_occurance(&uncyphered);
+            let divergence_to_language_histogram = kullback_lieber_divergence(&histogram, language);
 
-        if divergence_to_language_histogram < most_probable.1 {
-            most_probable.0 = candidate_char;
-            most_probable.1 = divergence_to_language_histogram;
+            if divergence_to_language_histogram < most_probable.1 {
+                most_probable.0 = candidate_char;
+                most_probable.1 = divergence_to_language_histogram;
+            }
+        } else {
+            panic!("This should not happens, a candidate char can't be converted to UTF 8 !!");
         }
     }
 
