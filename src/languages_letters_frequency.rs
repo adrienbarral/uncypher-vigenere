@@ -16,7 +16,7 @@ lazy_static! {
 }
 
 lazy_static! {
-    static ref DICTIONARIES: HashMap<&'static str, &'static AlphabetNormalized> = {
+    pub static ref DICTIONARIES: HashMap<&'static str, &'static AlphabetNormalized> = {
         let mut m: HashMap<&str, &AlphabetNormalized> = HashMap::new();
         m.insert("fr", &FRENCH_ALPHABET);
         m.insert("en", &ENGLISH_ALPHABET);

@@ -1,5 +1,6 @@
 extern crate ndarray;
-use crate::uncypher::uncypher_with_key;
+use crate::uncypher::convert_to_letter_index;
+use crate::uncypher::uncypher_with_key_as_letters_index;
 use ndarray::Array1;
 
 pub type Alphabet = Array1<u32>;
@@ -35,25 +36,23 @@ fn find_most_probable_key_letter(
     text: &str,
     language: &AlphabetNormalized,
 ) -> u8 {
-    let all_letters_cyphered_by_this_key_letter =
-        extract_all_letters_spaced_by(text, offset, key_length);
+    let tmp = extract_all_letters_spaced_by(text, offset, key_length);
+    let all_letters_cyphered_by_this_key_letter = convert_to_letter_index(&tmp);
+
     let mut most_probable = ('a' as u8, std::f32::MAX);
-
     for candidate in 0..26 {
-        let candidate_char = 'a' as u8 + candidate;
-        let candidate_char_slice = [candidate_char];
-        let key = std::str::from_utf8(&candidate_char_slice);
-        if let Ok(k) = key {
-            let uncyphered = uncypher_with_key(k, &all_letters_cyphered_by_this_key_letter);
-            let histogram = get_histogram_of_letter_occurance(&uncyphered);
-            let divergence_to_language_histogram = kullback_lieber_divergence(&histogram, language);
+        let candidate_slice = vec![candidate];
+        let uncyphered = uncypher_with_key_as_letters_index(
+            &candidate_slice,
+            &all_letters_cyphered_by_this_key_letter,
+        );
 
-            if divergence_to_language_histogram < most_probable.1 {
-                most_probable.0 = candidate_char;
-                most_probable.1 = divergence_to_language_histogram;
-            }
-        } else {
-            panic!("This should not happens, a candidate char can't be converted to UTF 8 !!");
+        let histogram = get_histogram_of_letter_occurance(&uncyphered);
+        let divergence_to_language_histogram = kullback_lieber_divergence(&histogram, language);
+
+        if divergence_to_language_histogram < most_probable.1 {
+            most_probable.0 = candidate_char;
+            most_probable.1 = divergence_to_language_histogram;
         }
     }
 
@@ -62,7 +61,6 @@ fn find_most_probable_key_letter(
 
 fn extract_all_letters_spaced_by(text: &str, offset: usize, space: usize) -> String {
     assert!(space > 0);
-    assert!(offset > 0);
 
     let mut res = std::string::String::new();
     let mut index = offset;
@@ -75,15 +73,11 @@ fn extract_all_letters_spaced_by(text: &str, offset: usize, space: usize) -> Str
     return res;
 }
 
-fn get_histogram_of_letter_occurance(text: &str) -> AlphabetNormalized {
+fn get_histogram_of_letter_occurance(text: &Vec<u8>) -> AlphabetNormalized {
     let mut occurances = Alphabet::zeros(26);
 
-    for c in text.chars() {
-        if c.is_ascii_lowercase() == false {
-            panic!("Text must be exclusivelly composed of ascii lowered cases");
-        }
-        let letter = c as u32 - 'a' as u32;
-        let index = letter as usize;
+    for c in text.iter() {
+        let index = *c as usize;
         occurances[index] = occurances[index] + 1;
     }
 
@@ -102,11 +96,14 @@ fn normalize(vector: &Alphabet) -> AlphabetNormalized {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::uncypher;
+    use crate::languages_letters_frequency;
 
     #[test]
     fn test_we_can_get_histogram_of_letter_occurance() {
         let text = "abcdefaaaa";
-        let histogram = get_histogram_of_letter_occurance(text);
+        let text_as_u8 = uncypher::convert_to_letter_index(text);
+        let histogram = get_histogram_of_letter_occurance(&text_as_u8);
         assert_eq!(histogram.len(), 26);
         assert_eq!(histogram[0], 5. / 10.);
         assert_eq!(histogram[1], 1. / 10.);
@@ -127,4 +124,11 @@ mod tests {
         assert_eq!(extract_all_letters_spaced_by(&text, 3, 6), "ddd");
         assert_eq!(extract_all_letters_spaced_by(&text, 4, 6), "eee");
     }
+
+    /*#[test]
+    fn test_we_can_find_most_probable_letters(){
+        //          x     x     x     x
+        let text = "ceciestletexteenclair";
+        find_most_probable_key_letter(0, 6, &text, languages_letters_frequency::DICTIONARIES["fr"]);
+    }*/
 }
