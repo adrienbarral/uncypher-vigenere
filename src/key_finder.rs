@@ -51,7 +51,7 @@ fn find_most_probable_key_letter(
         let divergence_to_language_histogram = kullback_lieber_divergence(&histogram, language);
 
         if divergence_to_language_histogram < most_probable.1 {
-            most_probable.0 = candidate_char;
+            most_probable.0 = candidate  +'a' as u8;
             most_probable.1 = divergence_to_language_histogram;
         }
     }
